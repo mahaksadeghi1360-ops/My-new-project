@@ -1,4 +1,4 @@
-name: Emergency Fix
+name: Deep Scan
 on: [push]
 jobs:
   compare:
@@ -8,43 +8,36 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Force Extract
+      - name: Scrape Everything
         run: |
           python3 -c "
           import re, os
-          def clean_find(filename):
-              if not os.path.exists(filename): return set()
-              with open(filename, 'r', encoding='utf-8') as f:
+          def deep_find(fn):
+              if not os.path.exists(fn): return set()
+              with open(fn, 'r', encoding='utf-8') as f:
                   data = f.read()
-              # پیدا کردن هر چیزی که شبیه یوزرنیم اینستاگرام باشه
-              raw = re.findall(r'instagram\.com/([a-zA-Z0-9._]+)|>([a-zA-Z0-9._]+)</a>', data)
-              return { (m[0] or m[1]) for m in raw if (m[0] or m[1]) and len(m[0] or m[1]) > 2 }
-
-          # چک کردن تمام فایل‌های احتمالی برای فالووینگ
-          ing = clean_find('following.html') | clean_find('Compare.yml') | clean_find('Compare.yml2')
-          ers = clean_find('followers_1.html')
+              # پیدا کردن هر متنی که شبیه یوزرنیم باشه و بین کدهای استایل نباشه
+              found = re.findall(r'href=\"/([^/\"?]+)/\"|d\">([^<]+)</div>', data)
+              res = set()
+              for m in found:
+                  u = m[0] or m[1]
+                  if u and 3 < len(u) < 30 and '.' not in u and '{' not in u:
+                      res.add(u)
+              return res
           
-          blacklist = {'explore', 'reels', 'direct', 'stories', 'p', 'tv', 'about', 'help', 'privacy'}
-          ing = {u for u in ing if u.lower() not in blacklist}
-          ers = {u for u in ers if u.lower() not in blacklist}
-          
+          ing = deep_find('following.html')
+          ers = deep_find('followers_1.html')
           unf = sorted(ing - ers)
           
           with open('README.md', 'w', encoding='utf-8') as f:
-              f.write('# نتیجه نهایی (تلاش مجدد)\n\n')
-              if len(ing) <= 1:
-                  f.write('⚠️ اخطار: فایل following.html شما خالی به نظر می‌رسد!\n')
-                  f.write('لطفاً مطمئن شوید فایل درست را آپلود کرده‌اید.\n')
-              else:
-                  f.write(f'✅ تعداد فالووینگ پیدا شده: {len(ing)}\n')
-                  f.write(f'✅ تعداد فالوور پیدا شده: {len(ers)}\n\n')
-                  f.write('### لیست کسانی که بک ندادند:\n')
-                  for u in unf: f.write(f'- {u}\n')
+              f.write('# نتیجه اسکن عمیق\n\n')
+              f.write(f'فالووینگ: {len(ing)} | فالوور: {len(ers)}\n\n')
+              for u in unf: f.write(f'- {u}\n')
           "
       - name: Push
         run: |
           git config --global user.name 'bot'
           git config --global user.email 'bot@bot.com'
           git add README.md
-          git commit -m "fix list" || exit 0
+          git commit -m "deep scan" || exit 0
           git push
