@@ -8,22 +8,33 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Run and Show List
+      - name: Show Results Directly
         run: |
           python3 -c "
           import re, os
-          def get_users(fm):
-              if not os.path.exists(fm): return set()
-              with open(fm, 'r', encoding='utf-8') as f:
-                  c = f.read()
-              return set(re.findall(r'instagram\.com/([a-zA-Z0-9._]+)', c))
+          def get_users(filename):
+              if not os.path.exists(filename): return set()
+              with open(filename, 'r', encoding='utf-8') as f:
+                  content = f.read()
+              # پیدا کردن یوزرنیم‌ها با دقت بالا
+              found = re.findall(r'instagram\.com/([a-zA-Z0-9._]+)|>([a-zA-Z0-9._]+)</a>', content)
+              res = set()
+              for m in found:
+                  u = m[0] if m[0] else m[1]
+                  if u and len(u) > 2 and u not in ['explore', 'reels', 'direct', 'stories']:
+                      res.add(u)
+              return res
           
           ing = get_users('following.html')
           ers = get_users('followers_1.html')
           unf = sorted(ing - ers)
           
-          print(f'\n--- STATS ---')
-          print(f'Following: {len(ing)} | Followers: {len(ers)}')
-          print(f'--- UNFOLLOWERS LIST ({len(unf)}) ---')
-          for u in unf: print(u)
+          print('\n' + '='*30)
+          print(f'FOLLOWING COUNT: {len(ing)}')
+          print(f'FOLLOWERS COUNT: {len(ers)}')
+          print('='*30)
+          print(f'LIST OF UNFOLLOWERS ({len(unf)}):')
+          for user in unf:
+              print(f'>> {user}')
+          print('='*30)
           "
