@@ -8,52 +8,22 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Run Comparison
+      - name: Run and Show List
         run: |
           python3 -c "
-          import re
-          import os
-
-          def extract_usernames(filename):
-              if not os.path.exists(filename):
-                  print(f'File {filename} not found!')
-                  return set()
-              with open(filename, 'r', encoding='utf-8') as f:
-                  content = f.read()
-              
-              # این الگو تمام یوزرنیم‌های احتمالی را در هر فرمتی پیدا می‌کند
-              found = re.findall(r'instagram\.com/([a-zA-Z0-9._]+)|>([a-zA-Z0-9._]+)</a>|u/([a-zA-Z0-9._]+)', content)
-              
-              results = set()
-              for match in found:
-                  for m in match:
-                      if m and len(m) > 1:
-                          results.add(m)
-              
-              blacklist = {'explore', 'reels', 'direct', 'stories', 'p', 'tv', 'about', 'help', 'privacy', 'terms', 'locations', 'directory'}
-              return {u for u in results if u.lower() not in blacklist}
-
-          try:
-              following = extract_usernames('following.html')
-              followers = extract_usernames('followers_1.html')
-              
-              unfollowers = following - followers
-
-              with open('result.txt', 'w', encoding='utf-8') as f:
-                  f.write(f'--- Stats ---\n')
-                  f.write(f'Following Found: {len(following)}\n')
-                  f.write(f'Followers Found: {len(followers)}\n\n')
-                  f.write(f'--- Unfollowers ({len(unfollowers)}) ---\n')
-                  if not unfollowers:
-                      f.write('No unfollowers found!')
-                  else:
-                      for user in sorted(unfollowers):
-                          f.write(user + '\n')
-          except Exception as e:
-              with open('result.txt', 'w') as f: f.write(f'Error: {str(e)}')
+          import re, os
+          def get_users(fm):
+              if not os.path.exists(fm): return set()
+              with open(fm, 'r', encoding='utf-8') as f:
+                  c = f.read()
+              return set(re.findall(r'instagram\.com/([a-zA-Z0-9._]+)', c))
+          
+          ing = get_users('following.html')
+          ers = get_users('followers_1.html')
+          unf = sorted(ing - ers)
+          
+          print(f'\n--- STATS ---')
+          print(f'Following: {len(ing)} | Followers: {len(ers)}')
+          print(f'--- UNFOLLOWERS LIST ({len(unf)}) ---')
+          for u in unf: print(u)
           "
-      - name: Upload Result
-        uses: actions/upload-artifact@v4
-        with:
-          name: unfollowers-list
-          path: result.txt
