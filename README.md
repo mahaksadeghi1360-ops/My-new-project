@@ -22,19 +22,23 @@ jobs:
                   return set(re.findall(r'href=\"https://www\.instagram\.com/([^/\"?]+)', content))
 
           try:
-              # اسم فایل‌های شما دقیقا مطابق عکس ۳
+              # اسم فایل‌ها دقیقاً مطابق عکس‌های تو
               following = extract_usernames('following.html')
               followers = extract_usernames('followers_1.html')
+
               unfollowers = following - followers
 
               with open('result.txt', 'w', encoding='utf-8') as f_out:
                   f_out.write('List of people who do not follow you back:\n')
                   f_out.write('------------------------------------------\n')
-                  for user in sorted(unfollowers):
-                      f_out.write(user + '\n')
-              print('Success!')
+                  if not unfollowers:
+                      f_out.write('No unfollowers found!')
+                  else:
+                      for user in sorted(unfollowers):
+                          f_out.write(user + '\n')
+              print('Comparison successful!')
           except Exception as e:
-              print(f'Error: {str(e)}')
+              print(f'Error occurred: {str(e)}')
           "
       - name: Upload Result
         uses: actions/upload-artifact@v4
