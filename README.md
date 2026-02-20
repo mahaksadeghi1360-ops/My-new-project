@@ -22,10 +22,9 @@ jobs:
                   return set(re.findall(r'href=\"https://www\.instagram\.com/([^/\"?]+)', content))
 
           try:
-              # اسم فایل‌ها دقیقاً مطابق عکس ۳ شما
+              # اسم فایل‌های شما دقیقا مطابق عکس ۳
               following = extract_usernames('following.html')
               followers = extract_usernames('followers_1.html')
-
               unfollowers = following - followers
 
               with open('result.txt', 'w', encoding='utf-8') as f_out:
