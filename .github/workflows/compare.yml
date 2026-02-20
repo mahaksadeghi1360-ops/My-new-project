@@ -1,4 +1,4 @@
-name: Final List
+name: Emergency Fix
 on: [push]
 jobs:
   compare:
@@ -8,33 +8,43 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Find Unfollowers
+      - name: Force Extract
         run: |
           python3 -c "
           import re, os
-          def get_u(f):
-              if not os.path.exists(f): return set()
-              with open(f, 'r', encoding='utf-8') as file:
-                  content = file.read()
-              # این الگو هم لینک و هم اسم‌های ساده را پیدا می‌کند
-              found = re.findall(r'instagram\.com/([a-zA-Z0-9._]+)|>([a-zA-Z0-9._]+)</a>', content)
-              return { (m[0] or m[1]) for m in found if (m[0] or m[1]) and len(m[0] or m[1]) > 2 }
+          def clean_find(filename):
+              if not os.path.exists(filename): return set()
+              with open(filename, 'r', encoding='utf-8') as f:
+                  data = f.read()
+              # پیدا کردن هر چیزی که شبیه یوزرنیم اینستاگرام باشه
+              raw = re.findall(r'instagram\.com/([a-zA-Z0-9._]+)|>([a-zA-Z0-9._]+)</a>', data)
+              return { (m[0] or m[1]) for m in raw if (m[0] or m[1]) and len(m[0] or m[1]) > 2 }
+
+          # چک کردن تمام فایل‌های احتمالی برای فالووینگ
+          ing = clean_find('following.html') | clean_find('Compare.yml') | clean_find('Compare.yml2')
+          ers = clean_find('followers_1.html')
           
-          ing = get_u('following.html')
-          ers = get_u('followers_1.html')
+          blacklist = {'explore', 'reels', 'direct', 'stories', 'p', 'tv', 'about', 'help', 'privacy'}
+          ing = {u for u in ing if u.lower() not in blacklist}
+          ers = {u for u in ers if u.lower() not in blacklist}
+          
           unf = sorted(ing - ers)
           
           with open('README.md', 'w', encoding='utf-8') as f:
-              f.write('# لیست نهایی آنفالوورها\n\n')
-              f.write(f'تعداد فالووینگ: {len(ing)} | تعداد فالوور: {len(ers)}\n\n')
-              f.write('### اسامی:\n')
-              if not unf: f.write('لیستی پیدا نشد. احتمالا فایل‌ها ناقص هستند.')
-              for u in unf: f.write(f'- {u}\n')
+              f.write('# نتیجه نهایی (تلاش مجدد)\n\n')
+              if len(ing) <= 1:
+                  f.write('⚠️ اخطار: فایل following.html شما خالی به نظر می‌رسد!\n')
+                  f.write('لطفاً مطمئن شوید فایل درست را آپلود کرده‌اید.\n')
+              else:
+                  f.write(f'✅ تعداد فالووینگ پیدا شده: {len(ing)}\n')
+                  f.write(f'✅ تعداد فالوور پیدا شده: {len(ers)}\n\n')
+                  f.write('### لیست کسانی که بک ندادند:\n')
+                  for u in unf: f.write(f'- {u}\n')
           "
-      - name: Publish List
+      - name: Push
         run: |
           git config --global user.name 'bot'
           git config --global user.email 'bot@bot.com'
           git add README.md
-          git commit -m "update list" || exit 0
+          git commit -m "fix list" || exit 0
           git push
