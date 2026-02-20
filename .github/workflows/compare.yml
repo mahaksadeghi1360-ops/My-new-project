@@ -1,31 +1,40 @@
-name: Final Check
+name: Final List
 on: [push]
 jobs:
   compare:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Work
+      - name: Find Unfollowers
         run: |
           python3 -c "
           import re, os
           def get_u(f):
               if not os.path.exists(f): return set()
               with open(f, 'r', encoding='utf-8') as file:
-                  return set(re.findall(r'instagram\.com/([a-zA-Z0-9._]+)', file.read()))
+                  content = file.read()
+              # این الگو هم لینک و هم اسم‌های ساده را پیدا می‌کند
+              found = re.findall(r'instagram\.com/([a-zA-Z0-9._]+)|>([a-zA-Z0-9._]+)</a>', content)
+              return { (m[0] or m[1]) for m in found if (m[0] or m[1]) and len(m[0] or m[1]) > 2 }
+          
           ing = get_u('following.html')
           ers = get_u('followers_1.html')
           unf = sorted(ing - ers)
-          with open('README.md', 'w') as f:
-              f.write('# Results\n')
-              f.write(f'Following: {len(ing)} | Followers: {len(ers)}\n\n')
+          
+          with open('README.md', 'w', encoding='utf-8') as f:
+              f.write('# لیست نهایی آنفالوورها\n\n')
+              f.write(f'تعداد فالووینگ: {len(ing)} | تعداد فالوور: {len(ers)}\n\n')
+              f.write('### اسامی:\n')
+              if not unf: f.write('لیستی پیدا نشد. احتمالا فایل‌ها ناقص هستند.')
               for u in unf: f.write(f'- {u}\n')
           "
-      - name: Update README
+      - name: Publish List
         run: |
           git config --global user.name 'bot'
           git config --global user.email 'bot@bot.com'
           git add README.md
-          git commit -m "update list"
+          git commit -m "update list" || exit 0
           git push
