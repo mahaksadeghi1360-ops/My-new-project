@@ -14,33 +14,38 @@ jobs:
           import re
           import os
 
-          def extract_usernames(filename):
-              if not os.path.exists(filename):
-                  return set()
+          def extract_all_possible_usernames(filename):
+              if not os.path.exists(filename): return set()
               with open(filename, 'r', encoding='utf-8') as f:
                   content = f.read()
-                  # جستجوی یوزرنیم‌ها در ساختار جدید صفحات اینستاگرام
-                  found = re.findall(r'https://www\.instagram\.com/([^/\"? \n]+)', content)
-                  # حذف موارد تکراری و کلمات سیستمی خود اینستاگرام
-                  return {u for u in found if u not in ['explore', 'reels', 'direct', 'stories', 'p', 'tv']}
+              
+              # روش ۱: جستجوی لینک کامل
+              links = re.findall(r'instagram\.com/([^/\"? \n]+)', content)
+              # روش ۲: جستجوی یوزرنیم‌های داخل متن (بین تگ‌ها)
+              texts = re.findall(r'>([^< ]+)</a>', content)
+              
+              all_found = set(links) | set(texts)
+              # حذف کلمات سیستمی و بی ربط
+              blacklist = {'explore', 'reels', 'direct', 'stories', 'p', 'tv', 'about', 'help', 'privacy', 'terms', 'locations', 'directory'}
+              return {u for u in all_found if len(u) > 1 and u not in blacklist and '.' not in u}
 
           try:
-              following = extract_usernames('following.html')
-              followers = extract_usernames('followers_1.html')
+              following = extract_all_possible_usernames('following.html')
+              followers = extract_all_possible_usernames('followers_1.html')
               
               unfollowers = following - followers
 
               with open('result.txt', 'w', encoding='utf-8') as f:
-                  f.write(f'Following: {len(following)} | Followers: {len(followers)}\n')
+                  f.write(f'I found {len(following)} people you follow.\n')
+                  f.write(f'I found {len(followers)} people who follow you.\n')
                   f.write('--- Unfollowers List ---\n')
                   if not unfollowers:
-                      f.write('No unfollowers found or files are empty!')
+                      f.write('No unfollowers found! (Check if Following count above is correct)')
                   else:
                       for user in sorted(unfollowers):
                           f.write(user + '\n')
           except Exception as e:
-              with open('result.txt', 'w') as f:
-                  f.write(f'Error: {str(e)}')
+              with open('result.txt', 'w') as f: f.write(str(e))
           "
       - name: Upload Result
         uses: actions/upload-artifact@v4
