@@ -19,11 +19,11 @@ jobs:
                   return set()
               with open(filename, 'r', encoding='utf-8') as f:
                   content = f.read()
-                  # استخراج یوزرنیم‌ها با دقت بالا
+                  # استخراج یوزرنیم‌ها با دقت بالا از کدهای اینستاگرام
                   return set(re.findall(r'href=\"https://www\.instagram\.com/([^/\"?]+)', content))
 
           try:
-              # اسم فایل‌ها دقیقاً مطابق عکس ۳ تو
+              # اسم فایل‌ها دقیقاً مطابق لیست فایل‌های تو در گیت‌هاب
               following = extract_usernames('following.html')
               followers = extract_usernames('followers_1.html')
 
