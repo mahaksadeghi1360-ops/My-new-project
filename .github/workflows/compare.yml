@@ -7,34 +7,30 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Show Results Directly
+      - name: Extract and Show
         run: |
           python3 -c "
           import re, os
-          def get_users(filename):
-              if not os.path.exists(filename): return set()
-              with open(filename, 'r', encoding='utf-8') as f:
-                  content = f.read()
-              # پیدا کردن یوزرنیم‌ها با دقت بالا
-              found = re.findall(r'instagram\.com/([a-zA-Z0-9._]+)|>([a-zA-Z0-9._]+)</a>', content)
-              res = set()
-              for m in found:
-                  u = m[0] if m[0] else m[1]
-                  if u and len(u) > 2 and u not in ['explore', 'reels', 'direct', 'stories']:
-                      res.add(u)
-              return res
+          def find_all(fn):
+              if not os.path.exists(fn): return set()
+              with open(fn, 'r', encoding='utf-8') as f:
+                  data = f.read()
+              # پیدا کردن یوزرنیم از لینک‌ها و متن‌ها
+              return set(re.findall(r'instagram\.com/([a-zA-Z0-9._]+)|>([a-zA-Z0-9._]+)</a>', data))
           
-          ing = get_users('following.html')
-          ers = get_users('followers_1.html')
+          ing_raw = find_all('following.html')
+          ers_raw = find_all('followers_1.html')
+          
+          # تمیز کردن یوزرنیم‌ها
+          ing = {u[0] or u[1] for u in ing_raw if (u[0] or u[1]) and len(u[0] or u[1]) > 2}
+          ers = {u[0] or u[1] for u in ers_raw if (u[0] or u[1]) and len(u[0] or u[1]) > 2}
+          
+          blacklist = {'explore', 'reels', 'direct', 'stories', 'p', 'tv', 'about', 'help'}
+          ing = {u for u in ing if u not in blacklist}
+          ers = {u for u in ers if u not in blacklist}
+
+          print(f'\nFollowing: {len(ing)} | Followers: {len(ers)}')
+          print('-' * 20)
           unf = sorted(ing - ers)
-          
-          print('\n' + '='*30)
-          print(f'FOLLOWING COUNT: {len(ing)}')
-          print(f'FOLLOWERS COUNT: {len(ers)}')
-          print('='*30)
-          print(f'LIST OF UNFOLLOWERS ({len(unf)}):')
-          for user in unf:
-              print(f'>> {user}')
-          print('='*30)
+          for u in unf: print(f'Unfollower: {u}')
           "
