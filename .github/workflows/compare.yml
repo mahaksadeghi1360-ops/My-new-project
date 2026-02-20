@@ -19,10 +19,10 @@ jobs:
                   return set()
               with open(filename, 'r', encoding='utf-8') as f:
                   content = f.read()
-                  # جستجوی تمام یوزرنیم‌ها در فرمت‌های مختلف اینستاگرام
-                  found = re.findall(r'href=\"https://www\.instagram\.com/([^/\"? \n]+)', content)
-                  # یک فیلتر اضافی برای حذف موارد سیستمی
-                  return {u for u in found if u not in ['explore', 'reels', 'direct', 'stories']}
+                  # جستجوی یوزرنیم‌ها در ساختار جدید صفحات اینستاگرام
+                  found = re.findall(r'https://www\.instagram\.com/([^/\"? \n]+)', content)
+                  # حذف موارد تکراری و کلمات سیستمی خود اینستاگرام
+                  return {u for u in found if u not in ['explore', 'reels', 'direct', 'stories', 'p', 'tv']}
 
           try:
               following = extract_usernames('following.html')
@@ -34,7 +34,7 @@ jobs:
                   f.write(f'Following: {len(following)} | Followers: {len(followers)}\n')
                   f.write('--- Unfollowers List ---\n')
                   if not unfollowers:
-                      f.write('No unfollowers found!')
+                      f.write('No unfollowers found or files are empty!')
                   else:
                       for user in sorted(unfollowers):
                           f.write(user + '\n')
