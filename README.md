@@ -19,26 +19,27 @@ jobs:
                   return set()
               with open(filename, 'r', encoding='utf-8') as f:
                   content = f.read()
+                  # استخراج یوزرنیم‌ها با دقت بالا
                   return set(re.findall(r'href=\"https://www\.instagram\.com/([^/\"?]+)', content))
 
           try:
-              # اسم فایل‌ها دقیقاً مطابق عکس‌های تو
+              # اسم فایل‌ها دقیقاً مطابق عکس ۳ تو
               following = extract_usernames('following.html')
               followers = extract_usernames('followers_1.html')
 
               unfollowers = following - followers
 
               with open('result.txt', 'w', encoding='utf-8') as f_out:
-                  f_out.write('List of people who do not follow you back:\n')
+                  f_out.write('Names of people who did not follow you back:\n')
                   f_out.write('------------------------------------------\n')
                   if not unfollowers:
-                      f_out.write('No unfollowers found!')
+                      f_out.write('Everyone follows you back! Cheers.')
                   else:
                       for user in sorted(unfollowers):
                           f_out.write(user + '\n')
-              print('Comparison successful!')
           except Exception as e:
-              print(f'Error occurred: {str(e)}')
+              with open('result.txt', 'w', encoding='utf-8') as f_out:
+                  f_out.write(f'An error occurred: {str(e)}')
           "
       - name: Upload Result
         uses: actions/upload-artifact@v4
