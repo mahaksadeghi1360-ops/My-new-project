@@ -1,36 +1,31 @@
-name: Check Unfollowers
+name: Final Check
 on: [push]
-
 jobs:
   compare:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
-      - name: Extract and Show
+      - name: Work
         run: |
           python3 -c "
           import re, os
-          def find_all(fn):
-              if not os.path.exists(fn): return set()
-              with open(fn, 'r', encoding='utf-8') as f:
-                  data = f.read()
-              # پیدا کردن یوزرنیم از لینک‌ها و متن‌ها
-              return set(re.findall(r'instagram\.com/([a-zA-Z0-9._]+)|>([a-zA-Z0-9._]+)</a>', data))
-          
-          ing_raw = find_all('following.html')
-          ers_raw = find_all('followers_1.html')
-          
-          # تمیز کردن یوزرنیم‌ها
-          ing = {u[0] or u[1] for u in ing_raw if (u[0] or u[1]) and len(u[0] or u[1]) > 2}
-          ers = {u[0] or u[1] for u in ers_raw if (u[0] or u[1]) and len(u[0] or u[1]) > 2}
-          
-          blacklist = {'explore', 'reels', 'direct', 'stories', 'p', 'tv', 'about', 'help'}
-          ing = {u for u in ing if u not in blacklist}
-          ers = {u for u in ers if u not in blacklist}
-
-          print(f'\nFollowing: {len(ing)} | Followers: {len(ers)}')
-          print('-' * 20)
+          def get_u(f):
+              if not os.path.exists(f): return set()
+              with open(f, 'r', encoding='utf-8') as file:
+                  return set(re.findall(r'instagram\.com/([a-zA-Z0-9._]+)', file.read()))
+          ing = get_u('following.html')
+          ers = get_u('followers_1.html')
           unf = sorted(ing - ers)
-          for u in unf: print(f'Unfollower: {u}')
+          with open('README.md', 'w') as f:
+              f.write('# Results\n')
+              f.write(f'Following: {len(ing)} | Followers: {len(ers)}\n\n')
+              for u in unf: f.write(f'- {u}\n')
           "
+      - name: Update README
+        run: |
+          git config --global user.name 'bot'
+          git config --global user.email 'bot@bot.com'
+          git add README.md
+          git commit -m "update list"
+          git push
